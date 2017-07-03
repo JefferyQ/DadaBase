@@ -1,13 +1,16 @@
 var fs = require('fs');
 
-var authors = {}, parsed = 0, ts, selected;
+var authors = {}, parsed = 0, ts,
+  search, doRemoves = 0, removes = [];
+
+parseArgs(process.argv.slice(2));
 
 loadData('texts', function() {
 
   var keysSorted = Object.keys(authors).sort(function(a,b){
     return authors[a].length - authors[b].length;
   });
-  for (var i = 0; i < keysSorted.length; i++) {
+  for (var i = 0; false && i < keysSorted.length; i++) {
     console.log('\''+keysSorted[i]+'\'', authors[keysSorted[i]].length);
   }
   console.log('\nParsed '+parsed+' files in ' + (+new Date()-ts)+' ms');
@@ -31,31 +34,33 @@ function loadData(dir, cb) {
 }
 
 function parseAuthor(fname, data) {
-  //console.log('parseAuthor: '+fname+' '+(+new Date()));
+
   var lines = data.split(/\r?\n/);
-//  for (var j = 0; j < 4; j++) {
-    var line = lines[0].replace(/ +/g, ' ');
-    if (line.length) {
-      if (!selected || line === selected) {
-        if (!authors[line]) {
-          authors[line] = [];
+  var author = lines[0].replace(/ +/g, ' ');
+  if (author.length) {
+    if (!authors[author]) {
+      authors[author] = [];
+    }
+    authors[author].push(fname);
+    ++parsed;
+  }
+
+  if (search && author && author.length) {
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].includes(search)) {
+        if (!removes || removes.indexOf(author) === -1) {
+          console.log('found '+author+': '+lines[i]);
+          removes && removes.push(author);
         }
-        authors[line].push(fname);
-        ++parsed;
       }
     }
-    return parsed;
-//  }
+  }
+
+  return parsed;
 }
 
 function handleRemoves() {
-
-  var removes = ['Lewis Carroll','William Cowper','Melanie Almeder','Henry Timrod'];
-    /*"William Shakespeare",'Emily Dickinson', 'Matthew Arnold','Ben Jonson','John Donne','Andrew Marvell', 'Robert Herrick', 'Edmund Spenser', "William Wordsworth", "Alfred, Lord Tennyson", "Anonymous", 'Christopher Marlowe',
-    "Robert Browning", "Algernon Charles Swinburne",'William Blake','Sir Philip Sidney', "Henry Wadsworth Longfellow", "John Keats",'Anne Finch, Countess of Winchilsea','Mother Goose','Rabindranath Tagore','Lord Byron (George Gordon)',
-    "Samuel Taylor Coleridge",'Edna St. Vincent Millay','Knight of the White Elephant of Burmah William McGonagall','Lady Mary Wortley Montagu',
-    "John Milton", 'Walt Whitman','Anne Bradstreet','Edgar Lee Masters','Geoffrey  Chaucer','George Herbert','Sir Thomas Wyatt','Dante Gabriel Rossetti','Percy Bysshe Shelley','Elizabeth Barrett Browning','Christina Rossetti'*/
-
+  if (!doRemoves) return;
   for (var j = 0; j < removes.length; j++) {
     var files = authors[removes[j]];
     if (files) {
@@ -64,6 +69,27 @@ function handleRemoves() {
         console.log('  moving '+files[i] + ' to '+files[i].replace(/texts\//,'unused/'));
         fs.rename(files[i], files[i].replace(/texts\//,'unused/'), function(e){ e && console.error(e); });
       }
+    }
+  }
+}
+
+function parseArgs(args) {
+
+  if (args.length === 2) {
+    var opt = args[0]
+    if (opt === '-f') {       // --find-by-string-match
+      search = args[1];
+    }
+    else if (opt === '-fd') { // --find-and-delete-by-match
+      search = args[1];
+      doRemoves = true;
+    }
+    else if (opt ===  '-a') { // --find-by-author-name
+      removes.push(args[1]);
+    }
+    else if (opt === '-ad') { // --find-and-delete-by-author
+      removes.push(args[1]);
+      doRemoves = true;
     }
   }
 }

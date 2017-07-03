@@ -1,9 +1,12 @@
-// NEXT: get rid of line-breaks
+// NEXT:
+//   open in editor (node canvas or browser?)
+//   better-handling of line-breaks
 
 var fs = require('fs');
 var rita = require('rita');
 
 var args = process.argv.slice(2), selected, target;
+
 if (args.length == 1) {
   target = parseInt(args[0]);
 }
@@ -13,15 +16,18 @@ else if (args.length == 2) {
 }
 
 loadData('texts', function(poems) {
-  console.log('\nLoaded '+ poems.length + ' poems' + (selected ? (' by '+selected) : '')+'\n');
+
+  console.log('\nLoaded '+ poems.length + ' poems'
+    + (selected ? (' by '+selected) : '')+'\n');
+
   generate(poems);
 });
 
 function generate(poems) {
+
   var rm = new rita.RiMarkov(3);
   rm.allowDuplicates = false;
   rm.loadText(poems.join('\n'));
-
 
   var sents = rm.generateSentences(10);
   for (var i = 0; i < sents.length; i++) {
@@ -65,6 +71,8 @@ function loadData(dir, cb) {
     var buffer = '', lines = data.split(/\r?\n/),
       author = lines[0].replace(/ +/g, ' ');
 
+    //console.log(author);
+
     if (!selected || selected === author) {
 
       for (var j = 0; j < lines.length; j++) {
@@ -86,6 +94,19 @@ function loadData(dir, cb) {
 
   fs.readdir(dir, function(err, filenames) {
 
+     var shuffle = function(a) { // a: array
+      var newArray = a.slice(),
+        len = newArray.length,
+        i = len;
+      while (i--) {
+        var p = parseInt(Math.random() * len),
+          t = newArray[i];
+        newArray[i] = newArray[p];
+        newArray[p] = t;
+      }
+      return newArray;
+    }
+
     if (err) throw err;
 
     target = target || filenames.length;
@@ -97,17 +118,4 @@ function loadData(dir, cb) {
       fs.readFile(dir + '/' +filenames[i], 'utf8', onFileRead);
     }
   });
-}
-
-function shuffle(a) { // shuffle array
-  var newArray = a.slice(),
-    len = newArray.length,
-    i = len;
-  while (i--) {
-    var p = parseInt(Math.random() * len),
-      t = newArray[i];
-    newArray[i] = newArray[p];
-    newArray[p] = t;
-  }
-  return newArray;
 }
