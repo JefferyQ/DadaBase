@@ -48,8 +48,8 @@ function parseAuthor(fname, data) {
   if (search && author && author.length) {
     for (var i = 0; i < lines.length; i++) {
       if (lines[i].includes(search)) {
+        if (!doRemove) console.log(author+': '+fname);
         if (!removes || removes.indexOf(author) === -1) {
-          console.log('found '+author+': '+lines[i]);
           removes && removes.push(author);
         }
       }
